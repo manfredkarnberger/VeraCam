@@ -1,0 +1,299 @@
+<Window x:Class="VeraCam.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="VeraCam — Ringpuffer + Änderungsdetektion"
+        Height="700" Width="820"
+        ResizeMode="CanMinimize"
+        Background="#3A3A3A"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <Style x:Key="TbBtn" TargetType="Button">
+            <Setter Property="Height"          Value="28"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Padding"         Value="10,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TbBox" TargetType="TextBox">
+            <Setter Property="Width"           Value="48"/>
+            <Setter Property="Height"          Value="26"/>
+            <Setter Property="FontFamily"      Value="Consolas"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="Background"      Value="#222"/>
+            <Setter Property="BorderBrush"     Value="#555"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="4,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="TextAlignment"   Value="Center"/>
+            <Setter Property="CaretBrush"      Value="White"/>
+        </Style>
+
+        <Style x:Key="RowLbl" TargetType="TextBlock">
+            <Setter Property="Foreground"        Value="White"/>
+            <Setter Property="FontFamily"        Value="Segoe UI"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="44"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="36"/>
+            <RowDefinition Height="36"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="26"/>
+        </Grid.RowDefinitions>
+
+        <!-- ══ TOOLBAR ══ -->
+        <Border Grid.Row="0" Background="#2A2A2A" BorderBrush="#1A1A1A" BorderThickness="0,0,0,2">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
+
+                <Button x:Name="TbPlay" Style="{StaticResource TbBtn}" Width="76" Margin="0,0,3,0"
+                        Background="#1A4A2A" Foreground="#7FFFAA" BorderBrush="#2A7A3A"
+                        IsEnabled="False" Click="BtnStart_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="▶" FontSize="11" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Play" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="TbStop" Style="{StaticResource TbBtn}" Width="76" Margin="0,0,6,0"
+                        Background="#4A1A24" Foreground="#FF7090" BorderBrush="#7A2A34"
+                        IsEnabled="False" Click="BtnStop_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="■" FontSize="11" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Stop" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Rectangle Width="1" Height="24" Fill="#555" Margin="2,0,6,0"/>
+
+                <Button x:Name="TbColor" Style="{StaticResource TbBtn}" Width="80" Margin="0,0,6,0"
+                        Background="#3A3A3A" Foreground="#DDD" BorderBrush="#666"
+                        Click="BtnColor_Click" ToolTip="Farbe / Schwarz-Weiss umschalten">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="TbColorIcon" Text="◑" FontSize="12"
+                                   Margin="0,0,4,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TbColorText" Text="Farbe" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Rectangle Width="1" Height="24" Fill="#555" Margin="2,0,8,0"/>
+
+                <!-- Videolänge -->
+                <TextBlock Text="Länge:" Foreground="White" FontFamily="Segoe UI" FontSize="11"
+                           VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBox x:Name="TbMaxLen" Style="{StaticResource TbBox}" Text="120"
+                         ToolTip="Maximale Videolänge in Sekunden (10–600)"
+                         LostFocus="TbMaxLen_LostFocus"/>
+                <TextBlock Text="s" Foreground="#AAA" FontFamily="Segoe UI" FontSize="11"
+                           VerticalAlignment="Center" Margin="3,0,12,0"/>
+
+                <!-- Nachlaufzeit -->
+                <TextBlock Text="Nachlauf:" Foreground="White" FontFamily="Segoe UI" FontSize="11"
+                           VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBox x:Name="TbCountdown" Style="{StaticResource TbBox}" Text="60"
+                         ToolTip="Nachlaufzeit nach erkannter Änderung in Sekunden"
+                         LostFocus="TbCountdown_LostFocus"/>
+                <TextBlock Text="s" Foreground="#AAA" FontFamily="Segoe UI" FontSize="11"
+                           VerticalAlignment="Center" Margin="3,0,8,0"/>
+
+                <Rectangle Width="1" Height="24" Fill="#555" Margin="2,0,8,0"/>
+
+                <!-- Empfindlichkeit -->
+                <TextBlock Text="Empf.:" Foreground="White" FontFamily="Segoe UI" FontSize="11"
+                           VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <Slider x:Name="SensSlider" Width="90" Minimum="1" Maximum="20" Value="5"
+                        VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"
+                        ValueChanged="SensSlider_ValueChanged"/>
+                <TextBlock x:Name="SensLabel" Text="5%" Foreground="White"
+                           FontFamily="Consolas" FontSize="11"
+                           VerticalAlignment="Center" Margin="5,0,0,0" Width="28"/>
+
+                <Rectangle Width="1" Height="24" Fill="#555" Margin="8,0"/>
+
+                <Ellipse x:Name="RecDot" Width="8" Height="8" Fill="#555"
+                         VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBlock x:Name="ToolbarStatus" Text="Bereit" Foreground="#CCC"
+                           FontFamily="Segoe UI" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ══ VORSCHAU ══ -->
+        <Border Grid.Row="1" Background="#111" BorderBrush="#1A1A1A" BorderThickness="0,0,0,1">
+            <Grid>
+                <Image x:Name="Preview" Stretch="Uniform"/>
+                <TextBlock x:Name="NoSignal" Text="Kein Signal"
+                           Foreground="#444" FontSize="20" FontFamily="Segoe UI"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                <Border x:Name="BwBadge" Background="#CC222222" BorderBrush="#888"
+                        BorderThickness="1" CornerRadius="2" Padding="7,2"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
+                    <TextBlock Text="S/W" Foreground="White" FontFamily="Segoe UI"
+                               FontSize="10" FontWeight="SemiBold"/>
+                </Border>
+
+                <Border x:Name="RecBadge" Visibility="Collapsed"
+                        Background="#CC182840" BorderBrush="#3060CC"
+                        BorderThickness="1" CornerRadius="2" Padding="8,3"
+                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="RecDotBig" Width="7" Height="7" Fill="#3060CC"
+                                 VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock x:Name="RecTimeText" Text="PUFFER"
+                                   Foreground="#6090FF" FontFamily="Consolas"
+                                   FontSize="11" FontWeight="Bold"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="ChangeFlash" Background="#22FF3030"
+                        BorderBrush="#FF3030" BorderThickness="3"
+                        Visibility="Collapsed" IsHitTestVisible="False"/>
+
+                <Border x:Name="CountdownBadge" Visibility="Collapsed"
+                        Background="#CC280808" BorderBrush="#CC2020"
+                        BorderThickness="1" CornerRadius="2" Padding="8,3"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Speichert in  " Foreground="#FF8080"
+                                   FontFamily="Segoe UI" FontSize="10"/>
+                        <TextBlock x:Name="CountdownText" Text="60"
+                                   Foreground="White" FontFamily="Consolas"
+                                   FontSize="12" FontWeight="Bold"/>
+                        <TextBlock Text=" s" Foreground="#FF8080"
+                                   FontFamily="Segoe UI" FontSize="10"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ══ PUFFER-BALKEN ══ -->
+        <Border Grid.Row="2" Background="#2E2E2E" BorderBrush="#1A1A1A"
+                BorderThickness="0,0,0,1" Padding="12,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="65"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="100"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Puffer:" Style="{StaticResource RowLbl}"/>
+                <Border Grid.Column="1" Background="#1A1A1A" BorderBrush="#444"
+                        BorderThickness="1" CornerRadius="2" VerticalAlignment="Center" Height="14">
+                    <Grid>
+                        <Border x:Name="BufferBar" Background="#2060A0"
+                                HorizontalAlignment="Left" Width="0" CornerRadius="2"/>
+                        <TextBlock x:Name="BufferPct" Text="0%"
+                                   Foreground="White" FontFamily="Segoe UI" FontSize="9"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+                <TextBlock Grid.Column="2" x:Name="BufferLabel" Text="0:00 / 2:00"
+                           Foreground="White" FontFamily="Consolas" FontSize="11"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            </Grid>
+        </Border>
+
+        <!-- ══ DIFF-BALKEN ══ -->
+        <Border Grid.Row="3" Background="#282828" BorderBrush="#1A1A1A"
+                BorderThickness="0,0,0,1" Padding="12,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="65"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="100"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Diff:" Style="{StaticResource RowLbl}"/>
+                <Border Grid.Column="1" Background="#1A1A1A" BorderBrush="#444"
+                        BorderThickness="1" CornerRadius="2" VerticalAlignment="Center" Height="14">
+                    <Grid>
+                        <Border x:Name="DiffBar" Background="#602020"
+                                HorizontalAlignment="Left" Width="0" CornerRadius="2"/>
+                        <Border x:Name="ThresholdMark" Background="#FF4040"
+                                HorizontalAlignment="Left" Width="2" CornerRadius="0"/>
+                        <TextBlock x:Name="DiffPct" Text="0.0%"
+                                   Foreground="White" FontFamily="Segoe UI" FontSize="9"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+                <TextBlock Grid.Column="2" x:Name="DiffLabel" Text="0.0%  / 5%"
+                           Foreground="White" FontFamily="Consolas" FontSize="11"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            </Grid>
+        </Border>
+
+        <!-- ══ KAMERA ══ -->
+        <Border Grid.Row="4" Background="#323232" BorderBrush="#1A1A1A"
+                BorderThickness="0,0,0,1" Padding="12,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="65"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Kamera:" Style="{StaticResource RowLbl}"/>
+                <ComboBox Grid.Column="1" x:Name="CameraCombo"
+                          Background="#111" Foreground="#111"
+                          BorderBrush="#555" FontFamily="Segoe UI" FontSize="12"
+                          VerticalContentAlignment="Center"
+                          SelectionChanged="CameraCombo_SelectionChanged"/>
+                <TextBlock Grid.Column="2" x:Name="CamCountLabel" Text="suche..."
+                           Foreground="#AAA" FontFamily="Segoe UI" FontSize="11"
+                           VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </Grid>
+        </Border>
+
+        <!-- ══ DATEI ══ -->
+        <Border Grid.Row="5" Background="#2E2E2E" BorderBrush="#1A1A1A"
+                BorderThickness="0,0,0,1" Padding="12,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="65"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Datei:" Style="{StaticResource RowLbl}"/>
+                <TextBox Grid.Column="1" x:Name="FilePath"
+                         Background="#222" Foreground="White" BorderBrush="#555"
+                         FontFamily="Consolas" FontSize="11" Padding="8,0"
+                         CaretBrush="White" VerticalContentAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- ══ STATUS ══ -->
+        <Border Grid.Row="6" Background="#222" BorderBrush="#1A1A1A"
+                BorderThickness="0,1,0,0" Padding="12,0">
+            <TextBlock x:Name="StatusLabel" Text="Bereit"
+                       Foreground="#CCC" FontFamily="Segoe UI" FontSize="11"
+                       VerticalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>
