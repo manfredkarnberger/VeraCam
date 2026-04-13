@@ -26,3 +26,4 @@ D:\ws_VisualStudio\VeraCam\obj\x64\Debug\net8.0-windows\refint\VeraCam.dll
 D:\ws_VisualStudio\VeraCam\obj\x64\Debug\net8.0-windows\VeraCam.pdb
 D:\ws_VisualStudio\VeraCam\obj\x64\Debug\net8.0-windows\VeraCam.genruntimeconfig.cache
 D:\ws_VisualStudio\VeraCam\obj\x64\Debug\net8.0-windows\ref\VeraCam.dll
+D:\ws_VisualStudio\VeraCam\obj\x64\Debug\net8.0-windows\VeraCam.sourcelink.json
