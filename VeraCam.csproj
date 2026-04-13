@@ -6,7 +6,11 @@
     <AssemblyName>VeraCam</AssemblyName>
     <RootNamespace>VeraCam</RootNamespace>
     <Platforms>x64</Platforms>
+    <ApplicationIcon>Images\Veratron.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="Images\Veratron.ico" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.9.0.20240103" />
     <PackageReference Include="System.Management" Version="8.0.0" />
